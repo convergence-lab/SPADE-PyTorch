@@ -1,11 +1,12 @@
 import argparse
 
+
 def get_parser():
     parser = argparse.ArgumentParser(description="Implementation of Semantic Image Synthesis with Spatially-Adaptive Normalization")
 
     # Dataloader
-    parser.add_argument('--path', required=True, help='path to the image folder')
-    parser.add_argument('--img-size', dest='img_size', nargs='+', default=[256,256], type=int,
+    # parser.add_argument('--path', required=True, help='path to the image folder')
+    parser.add_argument('--img-size', dest='img_size', nargs='+', default=[256, 256], type=int,
                         help='The size of images for training and validation')
     parser.add_argument('--batch-size', dest='batch_size', type=int, default=16,
                         help='Batch size for the dataloaders for train and val set')
@@ -13,7 +14,7 @@ def get_parser():
                         help='Number of CPU cores you want to use for data loading')
 
     # SPADE normalization layer
-    parser.add_argument('--spade-filter', dest='spade_filter', default=128, type=int, 
+    parser.add_argument('--spade-filter', dest='spade_filter', default=128, type=int,
                         help='The filter size to use in SPADE block')
     parser.add_argument('--sapde-kernel', dest='spade_kernel', default=3, type=int,
                         help='The kernel size to use in SPADE block')

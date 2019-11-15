@@ -1,7 +1,7 @@
-import numpy as np 
+import numpy as np
 from tqdm import tqdm
 
-import torch 
+import torch
 import torch.nn as nn
 
 from args import get_parser
@@ -11,19 +11,38 @@ from models.discriminator import SPADEDiscriminator
 from models.ganloss import GANLoss
 from models.weights_init import weights_init
 
+from torchvision import transforms
+from torchvision.datasets import VOCSegmentation
+
+
 def train(args):
     # Get the data
-    path = args.path 
-    dataset = {
-        x: CityScapesDataset(path, split=x, is_transform=True, img_size=args.img_size) for x in ['train', 'val']
-    }
-    data = {
-        x: torch.utils.data.DataLoader(dataset[x],
-                                     batch_size=args.batch_size,
-                                     shuffle=True,
-                                     num_workers=args.num_workers,
-                                     drop_last=True) for x in ['train', 'val']
-    }
+    # path = args.path
+    # dataset = {
+    #     x: CityScapesDataset(path, split=x, is_transform=True, img_size=args.img_size) for x in ['train', 'val']
+    # }
+    # data = {
+    #     x: torch.utils.data.DataLoader(dataset[x],
+    #                                    batch_size=args.batch_size,
+    #                                    shuffle=True,
+    #                                    num_workers=args.num_workers,
+    #                                    drop_last=True) for x in ['train', 'val']
+    # }
+
+    train_transform = transforms.Compose([
+        transforms.ColorJitter(0.1, 0.1, 0.1, 0.1),
+        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
+        transforms.ToTensor()
+    ])
+    # test_transform = transforms.Compose([
+    #     transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
+    #     transforms.ToTensor()
+    # ])
+
+    trainset = VOCSegmentation("./data", year='2012', image_set='train', download=True, transform=train_transform)
+    # testset = VOCSegmentation("./data", year='2012', image_set='val', download=True, transform=test_transform)
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, drop_last=True)
+    # test_loader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, drop_last=True)
 
     epochs = args.epochs
     lr_gen = args.lr_gen
@@ -58,53 +77,54 @@ def train(args):
     # The training loop
     for epoch in tqdm(range(epochs)):
         print(f'Epoch {epoch+1}/{epochs}')
-        for i, (img, seg) in enumerate(data['train']):
+        for i, (img, seg) in enumerate(train_loader):
             img = img.to(device)
             seg = seg.to(device)
-            
+
             fake_img = gen(noise, seg)
-            
+
             # Fake Detection and Loss
             pred_fake = dis(fake_img, seg)
             loss_D_fake = criterion(pred_fake, False)
-            
+
             # Real Detection and Loss
             pred_real = dis(img, seg)
             loss_D_real = criterion(pred_real, True)
-            
+
             loss_G = criterion(pred_fake, True)
-            loss_D = loss_D_fake + loss_D_real*0.5
-            
+            loss_D = loss_D_fake + loss_D_real * 0.5
+
             # Backprop
             optim_gen.zero_grad()
             loss_G.backward(retain_graph=True)
             optim_gen.step()
-            
+
             optim_dis.zero_grad()
             loss_D.backward()
             optim_dis.step()
-            
+
             G_losses.append(loss_G.detach().cpu())
             D_losses.append(loss_D.detach().cpu())
-            
-            if i%200 == 0:
-                print("Iteration {}/{} started".format(i+1, len(data['train'])))
-        
+
+            if i % 200 == 0:
+                print("Iteration {}/{} started".format(i + 1, len(data['train'])))
+
         print()
-        if epoch%20 == 0:
+        if epoch % 20 == 0:
             with torch.no_grad():
                 img_lists.append(fake_img.detach().cpu().numpy())
 
     torch.save(gen, 'gen.pth')
     torch.save(gen, 'dis.pth')
 
+
 if __name__ == "__main__":
     # Parse the arguments
     parser = get_parser()
     args = parser.parse_args()
 
-    if args.gen_hidden_size%16 != 0:
-        print('hidden-size should be multiple of 16. It is based on paper where first input', end=" ") 
+    if args.gen_hidden_size % 16 != 0:
+        print('hidden-size should be multiple of 16. It is based on paper where first input', end=" ")
         print('to SPADE is (4,4) in height and width. You can change this defualt in args.py')
         exit()
 
