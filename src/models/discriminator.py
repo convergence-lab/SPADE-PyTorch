@@ -27,6 +27,7 @@ class SPADEDiscriminator(nn.Module):
         self.conv = spectral_norm(nn.Conv2d(512, 1, kernel_size=(4,4), padding=1))
 
     def forward(self, img, seg):
+        print(img.shape, seg.shape)
         x = torch.cat((seg, img.detach()), dim=1)
         x = self.layer1(x)
         x = self.layer2(x)

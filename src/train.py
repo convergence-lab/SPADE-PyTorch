@@ -30,16 +30,22 @@ def train(args):
     # }
 
     train_transform = transforms.Compose([
+        transforms.Resize((256, 256)),
         transforms.ColorJitter(0.1, 0.1, 0.1, 0.1),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
-        transforms.ToTensor()
+        transforms.ToTensor(),
+        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+    ])
+
+    target_transform = transforms.Compose([
+       transforms.Resize((256, 256)),
+       transforms.ToTensor()
     ])
     # test_transform = transforms.Compose([
     #     transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
     #     transforms.ToTensor()
     # ])
 
-    trainset = VOCSegmentation("./data", year='2012', image_set='train', download=True, transform=train_transform)
+    trainset = VOCSegmentation("./data", year='2012', image_set='train', download=True, transform=train_transform, target_transform=target_transform)
     # testset = VOCSegmentation("./data", year='2012', image_set='val', download=True, transform=test_transform)
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, drop_last=True)
     # test_loader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, drop_last=True)
@@ -54,7 +60,7 @@ def train(args):
     torch.backends.cudnn.benchmark = True
 
     gen = SPADEGenerator(args)
-    dis = SPADEDiscriminator()
+    dis = SPADEDiscriminator(args)
 
     gen = gen.to(device)
     dis = dis.to(device)
@@ -80,7 +86,7 @@ def train(args):
         for i, (img, seg) in enumerate(train_loader):
             img = img.to(device)
             seg = seg.to(device)
-
+            
             fake_img = gen(noise, seg)
 
             # Fake Detection and Loss
@@ -107,7 +113,7 @@ def train(args):
             D_losses.append(loss_D.detach().cpu())
 
             if i % 200 == 0:
-                print("Iteration {}/{} started".format(i + 1, len(data['train'])))
+                print("Iteration {}/{} started".format(i + 1, len(train_loader)))
 
         print()
         if epoch % 20 == 0:

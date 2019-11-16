@@ -8,13 +8,13 @@ def get_parser():
     # parser.add_argument('--path', required=True, help='path to the image folder')
     parser.add_argument('--img-size', dest='img_size', nargs='+', default=[256, 256], type=int,
                         help='The size of images for training and validation')
-    parser.add_argument('--batch-size', dest='batch_size', type=int, default=16,
+    parser.add_argument('--batch-size', dest='batch_size', type=int, default=4,
                         help='Batch size for the dataloaders for train and val set')
     parser.add_argument('--num-workers', dest='num_workers', type=int, default=4,
                         help='Number of CPU cores you want to use for data loading')
 
     # SPADE normalization layer
-    parser.add_argument('--spade-filter', dest='spade_filter', default=128, type=int,
+    parser.add_argument('--spade-filter', dest='spade_filter', default=32, type=int,
                         help='The filter size to use in SPADE block')
     parser.add_argument('--sapde-kernel', dest='spade_kernel', default=3, type=int,
                         help='The kernel size to use in SPADE block')
@@ -27,7 +27,7 @@ def get_parser():
     # SPADE Generator
     parser.add_argument('--gen-input-size', dest='gen_input_size', default=256, type=int,
                         help='The noise size to be given to generator')
-    parser.add_argument('--gen-hidden-size', dest='gen_hidden_size', default=16384, type=int,
+    parser.add_argument('--gen-hidden-size', dest='gen_hidden_size', default=65536, type=int,
                         help='Hidden size for the first layer of generator')
 
     # Training arguments
