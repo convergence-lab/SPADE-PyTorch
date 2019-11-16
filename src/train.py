@@ -112,9 +112,6 @@ def train(args):
             G_losses.append(loss_G.detach().cpu())
             D_losses.append(loss_D.detach().cpu())
 
-            if i % 200 == 0:
-                print("Iteration {}/{} started".format(i + 1, len(train_loader)))
-
         print()
         if epoch % 20 == 0:
             with torch.no_grad():
