@@ -8,13 +8,13 @@ def get_parser():
     # parser.add_argument('--path', required=True, help='path to the image folder')
     parser.add_argument('--img-size', dest='img_size', nargs='+', default=[256, 256], type=int,
                         help='The size of images for training and validation')
-    parser.add_argument('--batch-size', dest='batch_size', type=int, default=4,
+    parser.add_argument('--batch-size', dest='batch_size', type=int, default=32,
                         help='Batch size for the dataloaders for train and val set')
     parser.add_argument('--num-workers', dest='num_workers', type=int, default=4,
                         help='Number of CPU cores you want to use for data loading')
 
     # SPADE normalization layer
-    parser.add_argument('--spade-filter', dest='spade_filter', default=32, type=int,
+    parser.add_argument('--spade-filter', dest='spade_filter', default=256, type=int,
                         help='The filter size to use in SPADE block')
     parser.add_argument('--sapde-kernel', dest='spade_kernel', default=3, type=int,
                         help='The kernel size to use in SPADE block')
@@ -31,11 +31,11 @@ def get_parser():
                         help='Hidden size for the first layer of generator')
 
     # Training arguments
-    parser.add_argument('--epochs', dest='epochs', type=int, default=100,
+    parser.add_argument('--epochs', dest='epochs', type=int, default=2000,
                         help='Number of epochs to run of training')
-    parser.add_argument('--lr_gen', dest='lr_gen', type=int, default=0.0001,
+    parser.add_argument('--lr_gen', dest='lr_gen', type=int, default=0.01,
                         help='Learning rate of generator')
-    parser.add_argument('--lr_dis', dest='lr_dis', type=int, default=0.0004,
+    parser.add_argument('--lr_dis', dest='lr_dis', type=int, default=0.001,
                         help='Learning rate of discriminator')
 
     return parser

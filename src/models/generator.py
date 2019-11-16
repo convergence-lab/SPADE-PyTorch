@@ -1,7 +1,7 @@
 import torch
 from torch.nn import Module, Linear, Conv2d
 from torch.nn.utils import spectral_norm
-from torch.nn.functional import tanh, interpolate 
+from torch.nn.functional import tanh, interpolate, sigmoid
 from .spade_resblk import SPADEResBlk
 
 class SPADEGenerator(Module):

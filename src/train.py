@@ -1,5 +1,7 @@
+import os
 import numpy as np
 from tqdm import tqdm
+from PIL import Image
 
 import torch
 import torch.nn as nn
@@ -13,6 +15,8 @@ from models.weights_init import weights_init
 
 from torchvision import transforms
 from torchvision.datasets import VOCSegmentation
+
+from models.novograd import NovoGrad
 
 
 def train(args):
@@ -32,8 +36,7 @@ def train(args):
     train_transform = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ColorJitter(0.1, 0.1, 0.1, 0.1),
-        transforms.ToTensor(),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        transforms.ToTensor()
     ])
 
     target_transform = transforms.Compose([
@@ -65,16 +68,13 @@ def train(args):
     gen = gen.to(device)
     dis = dis.to(device)
 
-    noise = torch.rand(4, 256)
-    noise = noise.to(device)
-
     criterion = GANLoss()
 
     gen.apply(weights_init)
     dis.apply(weights_init)
 
-    optim_gen = torch.optim.Adam(gen.parameters(), lr=lr_gen, betas=(0, 0.999))
-    optim_dis = torch.optim.Adam(dis.parameters(), lr=lr_dis, betas=(0, 0.999))
+    optim_gen = NovoGrad(gen.parameters(), lr=lr_gen)
+    optim_dis = NovoGrad(dis.parameters(), lr=lr_dis)
 
     img_lists = []
     G_losses = []
@@ -83,7 +83,12 @@ def train(args):
     # The training loop
     for epoch in tqdm(range(epochs)):
         print(f'Epoch {epoch+1}/{epochs}')
+        gen_loss = 0
+        dis_loss = 0
         for i, (img, seg) in enumerate(train_loader):
+
+            noise = torch.randn(args.batch_size, 256)
+            noise = noise.to(device)
             img = img.to(device)
             seg = seg.to(device)
             
@@ -97,7 +102,7 @@ def train(args):
             pred_real = dis(img, seg)
             loss_D_real = criterion(pred_real, True)
 
-            loss_G = criterion(pred_fake, True)
+            loss_G = criterion(pred_fake, True, generator=True)
             loss_D = loss_D_fake + loss_D_real * 0.5
 
             # Backprop
@@ -111,14 +116,21 @@ def train(args):
 
             G_losses.append(loss_G.detach().cpu())
             D_losses.append(loss_D.detach().cpu())
+            gen_loss += loss_G.detach().cpu().item()
+            dis_loss += loss_D.detach().cpu().item()
 
         print()
-        if epoch % 20 == 0:
+        if epoch % 10 == 0:
             with torch.no_grad():
-                img_lists.append(fake_img.detach().cpu().numpy())
+                im = np.clip((fake_img[0].detach().cpu().numpy() * 255), 0, 255).astype(np.uint8)
+                im = im.transpose((1, 2, 0))
+                im = Image.fromarray(im, "RGB")
+                im.save(f"imgs/img-e{epoch:04}.jpg")
+            torch.save(gen, 'gen.pth')
+            torch.save(gen, 'dis.pth')
 
-    torch.save(gen, 'gen.pth')
-    torch.save(gen, 'dis.pth')
+        print("Gen loss", gen_loss / len(train_loader), "Dis loss", dis_loss / len(train_loader))
+
 
 
 if __name__ == "__main__":

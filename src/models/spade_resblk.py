@@ -1,6 +1,6 @@
 import torch
 from torch.nn import Module, Conv2d
-from torch.nn.functional import relu
+from torch.nn.functional import gelu
 from torch.nn.utils import spectral_norm
 from .spade import SPADE
 
@@ -24,13 +24,13 @@ class SPADEResBlk(Module):
     
     def forward(self, x, seg):
         x_skip = x
-        x = relu(self.spade1(x, seg))
+        x = gelu(self.spade1(x, seg))
         x = self.conv1(x)
-        x = relu(self.spade2(x, seg))
+        x = gelu(self.spade2(x, seg))
         x = self.conv2(x)
 
         if self.skip:
-            x_skip = relu(self.spade_skip(x_skip, seg))
+            x_skip = gelu(self.spade_skip(x_skip, seg))
             x_skip = self.conv_skip(x_skip)
         
         return x_skip + x

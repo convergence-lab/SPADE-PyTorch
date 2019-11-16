@@ -1,7 +1,7 @@
 import torch
 from torch.nn import Module, Conv2d
 from torch.nn.utils import spectral_norm
-from torch.nn.functional import interpolate, relu
+from torch.nn.functional import interpolate, gelu
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -27,7 +27,7 @@ class SPADE(Module):
         x = (x - mean) / std
 
         seg = interpolate(seg, size=(H,W), mode='nearest')
-        seg = relu(self.conv(seg))
+        seg = gelu(self.conv(seg))
         seg_gamma = self.conv_gamma(seg)
         seg_beta = self.conv_beta(seg)
 
