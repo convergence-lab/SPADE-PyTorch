@@ -18,6 +18,15 @@ from torchvision.datasets import VOCSegmentation
 
 from models.novograd import NovoGrad
 
+def check_grad(parameters):
+    sum_grad = 0
+    i = 0
+    for p in parameters:
+        if p.grad is not None:
+            sum_grad = p.grad.abs().mean()
+            i += 1
+    return sum_grad / i
+
 
 def train(args):
     # Get the data
@@ -85,30 +94,32 @@ def train(args):
         print(f'Epoch {epoch+1}/{epochs}')
         gen_loss = 0
         dis_loss = 0
+        gen_grad = 0
+        dis_grad = 0
+        gen.train()
+        dis.train()
         for i, (img, seg) in enumerate(train_loader):
 
-            noise = torch.randn(args.batch_size, 256)
+            noise = torch.tensor(np.random.randn(args.batch_size, 256), dtype=torch.float32, requires_grad=True)
             noise = noise.to(device)
             img = img.to(device)
             seg = seg.to(device)
             
             fake_img = gen(noise, seg)
+            pred_fake = dis(fake_img, seg)
+            loss_G = criterion(pred_fake, True, generator=True)
+            optim_gen.zero_grad()
+            loss_G.backward()
+            optim_gen.step()
+            gen_grad += check_grad(gen.parameters())
 
-            # Fake Detection and Loss
+
+            fake_img = fake_img.detach()
             pred_fake = dis(fake_img, seg)
             loss_D_fake = criterion(pred_fake, False)
-
-            # Real Detection and Loss
             pred_real = dis(img, seg)
             loss_D_real = criterion(pred_real, True)
-
-            loss_G = criterion(pred_fake, True, generator=True)
-            loss_D = loss_D_fake + loss_D_real * 0.5
-
-            # Backprop
-            optim_gen.zero_grad()
-            loss_G.backward(retain_graph=True)
-            optim_gen.step()
+            loss_D = (loss_D_fake + loss_D_real) * 0.5
 
             optim_dis.zero_grad()
             loss_D.backward()
@@ -118,6 +129,7 @@ def train(args):
             D_losses.append(loss_D.detach().cpu())
             gen_loss += loss_G.detach().cpu().item()
             dis_loss += loss_D.detach().cpu().item()
+            dis_grad += check_grad(dis.parameters())
 
         print()
         if epoch % 10 == 0:
@@ -129,7 +141,8 @@ def train(args):
             torch.save(gen, 'gen.pth')
             torch.save(gen, 'dis.pth')
 
-        print("Gen loss", gen_loss / len(train_loader), "Dis loss", dis_loss / len(train_loader))
+
+        print("Gen loss", gen_loss / len(train_loader), "Gen Grad", gen_grad / len(train_loader), "Dis loss", dis_loss / len(train_loader), "Dis grad", dis_grad / len(train_loader))
 
 
 

@@ -33,7 +33,7 @@ def get_parser():
     # Training arguments
     parser.add_argument('--epochs', dest='epochs', type=int, default=2000,
                         help='Number of epochs to run of training')
-    parser.add_argument('--lr_gen', dest='lr_gen', type=int, default=0.1,
+    parser.add_argument('--lr_gen', dest='lr_gen', type=int, default=0.01,
                         help='Learning rate of generator')
     parser.add_argument('--lr_dis', dest='lr_dis', type=int, default=0.01,
                         help='Learning rate of discriminator')

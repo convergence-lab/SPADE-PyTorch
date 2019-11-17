@@ -11,7 +11,7 @@ class GANLoss(nn.Module):
         self.fake_label_var = None
         self.Tensor = tensor
         if use_lsgan:
-            self.loss = nn.L1Loss()
+            self.loss = nn.MSELoss()
         else:
             self.loss = nn.BCELoss()
 
@@ -23,18 +23,18 @@ class GANLoss(nn.Module):
                             (self.real_label_var.numel() != input.numel()))
             if create_label:
                 real_tensor = self.Tensor(input.size()).fill_(self.real_label)
-                self.real_label_var = torch.tensor(real_tensor, requires_grad=False)
+                self.real_label_var = torch.tensor(real_tensor)
             if generator:
                 target_tensor = self.real_label_var
             else:
-                target_tensor = self.real_label_var - (torch.rand(self.real_label_var.shape) * 0.5 - 0.25)
+                target_tensor = self.real_label_var #- (torch.rand(self.real_label_var.shape) * 0.5 - 0.25)
         else:
             create_label = ((self.fake_label_var is None) or
                             (self.fake_label_var.numel() != input.numel()))
             if create_label:
                 fake_tensor = self.Tensor(input.size()).fill_(self.fake_label)
-                self.fake_label_var = torch.tensor(fake_tensor, requires_grad=False)
-            target_tensor = self.fake_label_var + torch.rand(self.fake_label_var.shape) * 0.3
+                self.fake_label_var = torch.tensor(fake_tensor)
+            target_tensor = self.fake_label_var #+ torch.rand(self.fake_label_var.shape) * 0.3
         return target_tensor
 
     def __call__(self, input, target_is_real, generator=False):        

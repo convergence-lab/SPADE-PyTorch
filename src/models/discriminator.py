@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torch.nn.functional import leaky_relu
+from torch.nn.functional import leaky_relu, sigmoid
 from torch.nn.utils import spectral_norm
 
 def custom_model1(in_chan, out_chan):
@@ -25,14 +25,19 @@ class SPADEDiscriminator(nn.Module):
         self.layer4 = custom_model2(256, 512, stride=1)
         self.inst_norm = nn.InstanceNorm2d(512)
         self.conv = spectral_norm(nn.Conv2d(512, 1, kernel_size=(4,4), padding=1))
+        self.pool = nn.AvgPool2d(30)
 
     def forward(self, img, seg):
-        x = torch.cat((seg, img.detach()), dim=1)
+        b = img.shape[0]
+        x = torch.cat((seg, img), dim=1)
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
         x = leaky_relu(self.inst_norm(x))
-        x = self.conv(x)
+        x = leaky_relu(self.conv(x))
+        x = self.pool(x)
+        x = x.view(b, 1)
+        x = sigmoid(x)
         return x
         
